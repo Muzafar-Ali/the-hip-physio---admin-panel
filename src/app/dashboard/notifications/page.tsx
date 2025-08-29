@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';
-import { ColumnDef, DataTable } from '@/components/ui/common/DataTables';
-import { PageHeader } from '@/components/ui/common/PageHeader';
+import { ColumnDef, DataTable } from '@/components/common/DataTables';
+import { PageHeader } from '@/components/common/PageHeader';
 
 const columns: ColumnDef<Notification>[] = [
     { accessorKey: 'title', header: 'Title', cell: (row) => <div className="font-medium">{row.title}</div> },

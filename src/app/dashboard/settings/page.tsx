@@ -5,7 +5,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { PageHeader } from '@/components/ui/common/PageHeader';
+import { PageHeader } from '@/components/common/PageHeader';
 
 export default function SettingsPage() {
   const { pages, loading, fetchPages } = useContentStore();

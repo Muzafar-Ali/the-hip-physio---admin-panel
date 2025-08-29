@@ -23,15 +23,38 @@ export interface User {
   lastLogin: string;
 }
 
+export interface ExerciseCategory {
+  _id: string;
+  title: string;
+}
+
 export interface Exercise {
   _id: string;
   name: string;
   description: string;
   videoUrl: string;
+  thumbnailUrl: string;
   reps: string;
   sets: string;
-  category: string;
+  category: ExerciseCategory; 
   tags: string[];
+  bodyPart: string;
+  difficulty: 'Beginner' | 'Medium' | 'Advanced';
+  estimatedDuration?: number;
+  createdBy: string; // This would ideally be a populated User object
+  createdAt: string;
+  updatedAt: string;
+}
+
+// State definition for Zustand store
+export interface ExerciseState {
+  exercises: Exercise[];
+  loading: boolean;
+  error: string | null;
+  fetchExercises: () => Promise<void>;
+  addExercise: (formData: FormData) => Promise<boolean>;
+  updateExercise: (formData: FormData) => Promise<boolean>;
+  deleteExercise: (exerciseId: string) => Promise<void>;
 }
 
 export interface RehabPlan {
@@ -89,6 +112,8 @@ export interface UserState {
   loading: boolean;
   error: string | null;
   fetchUsers: () => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
   // Add addUser, updateUser, etc. later
 }
 

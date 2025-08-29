@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
-import { ColumnDef, DataTable } from '@/components/ui/common/DataTables';
-import { PageHeader } from '@/components/ui/common/PageHeader';
+import { ColumnDef, DataTable } from '@/components/common/DataTables';
+import { PageHeader } from '@/components/common/PageHeader';
 
 const columns: ColumnDef<UserWithAnalytics>[] = [
     { accessorKey: 'username', header: 'User', cell: (row) => <div className="font-medium">{row.username}</div> },

@@ -9,37 +9,26 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import config from '@/config/config';
+import { toast } from 'sonner';
+import { useUserStore } from '@/stores/useUserStore';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { login, loading } = useUserStore();
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // add credentials: 'include' if your Express sets httpOnly cookies
-        body: JSON.stringify({ email, password }),
-      });
 
-      if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg || 'Invalid credentials');
-      }
+    const success = await login(email, password);
 
-      router.replace('/dashboard');
-    } catch (err: any) {
-      setError(err?.message ?? 'Login failed');
-    } finally {
-      setLoading(false);
+    if (success) {
+      router.push('/dashboard');
     }
   };
 
