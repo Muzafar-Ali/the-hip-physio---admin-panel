@@ -1,7 +1,9 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNotificationStore } from '@/stores/useNotificationStore';
-import { Notification } from '@/lib/types';
+import { useUserStore } from '@/stores/useUserStore';
+import { Notification, SendNotificationInput, User } from '@/lib/types';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -12,70 +14,194 @@ import { ColumnDef, DataTable } from '@/components/common/DataTables';
 import { PageHeader } from '@/components/common/PageHeader';
 
 const columns: ColumnDef<Notification>[] = [
-    { accessorKey: 'title', header: 'Title', cell: (row) => <div className="font-medium">{row.title}</div> },
-    { accessorKey: 'body', header: 'Message', cell: (row) => <p className="truncate max-w-xs">{row.body}</p> },
-    { accessorKey: 'status', header: 'Status', cell: (row) => row.status },
-    { accessorKey: 'sentTime', header: 'Sent At', cell: (row) => row.sentTime ? new Date(row.sentTime).toLocaleString() : 'N/A' },
+  { accessorKey: 'title', header: 'Title', cell: (row) => <div className="font-medium">{row.title}</div> },
+  { accessorKey: 'body', header: 'Message', cell: (row) => <p className="truncate max-w-xs">{row.body}</p> },
+  { accessorKey: 'status', header: 'Status', cell: (row) => row.status },
+  { accessorKey: 'sentAt', header: 'Sent At', cell: (row) => row.sentAt ? new Date(row.sentAt).toLocaleString() : 'N/A' }
 ];
 
 export default function NotificationsPage() {
-    const { notifications, loading, fetchNotifications, sendNotification } = useNotificationStore();
-    const [title, setTitle] = useState('');
-    const [body, setBody] = useState('');
+  const { notifications, loading, fetchNotifications, sendNotification } = useNotificationStore();
 
-    useEffect(() => {
-        if (notifications.length === 0) fetchNotifications();
-    }, [notifications, fetchNotifications]);
+  // 👇 reuse your existing user store
+  const { users, loading: usersLoading, fetchUsers } = useUserStore();
 
-    const handleSend = async () => {
-        if (!title || !body) {
-            alert('Title and message are required.');
-            return;
-        }
-        await sendNotification({ title, body, targetGroup: 'All' });
-        setTitle('');
-        setBody('');
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+
+  const [audienceType, setAudienceType] = useState<'all' | 'selected'>('all');
+  const [userSearch, setUserSearch] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (notifications.length === 0) fetchNotifications();
+  }, [notifications.length, fetchNotifications]);
+
+  // Load users only when needed
+  useEffect(() => {
+    if (audienceType === 'selected' && users.length === 0) {
+      fetchUsers();
+    }
+  }, [audienceType, users.length, fetchUsers]);
+
+  const filteredUsers = useMemo(() => {
+    const q = userSearch.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter((u: User) =>
+      u.username?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q)
+    );
+  }, [users, userSearch]);
+
+  const toggleUser = (id: string, checked: boolean) => {
+    setSelectedUserIds(prev => checked ? [...new Set([...prev, id])] : prev.filter(x => x !== id));
+  };
+
+  const handleSend = async () => {
+    if (!title || !body) {
+      alert('Title and message are required.');
+      return;
+    }
+
+    const payload: SendNotificationInput = {
+      title,
+      body,
+      audienceType,
+      userIds: audienceType === 'selected' ? selectedUserIds : undefined,
     };
 
-    return (
-        <div className="space-y-6">
-            <PageHeader title="Push Notifications" />
-            <div className="grid gap-6 md:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Send New Notification</CardTitle>
-                        <CardDescription>Send a message to all app users.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="title">Title</Label>
-                            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Weekly Motivation" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="body">Message</Label>
-                            <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Your message here..." />
-                        </div>
-                        <Button onClick={handleSend} disabled={loading}>
-                            <Send className="mr-2 h-4 w-4" />
-                            {loading ? 'Sending...' : 'Send to All Users'}
-                        </Button>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>History</CardTitle>
-                        <CardDescription>Recently sent notifications.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <DataTable
-                            columns={columns}
-                            data={notifications}
-                            searchKey="title"
-                            isLoading={loading}
-                        />
-                    </CardContent>
-                </Card>
+    if (payload.audienceType === 'selected' && !payload.userIds?.length) {
+      alert('Please select at least one user.');
+      return;
+    }
+
+    await sendNotification(payload);
+    // reset
+    setTitle('');
+    setBody('');
+    setAudienceType('all');
+    setUserSearch('');
+    setSelectedUserIds([]);
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Push Notifications" />
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Send New Notification</CardTitle>
+            <CardDescription>Send a message to all users or only selected users.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Weekly Motivation" />
             </div>
-        </div>
-    );
+            <div className="space-y-2">
+              <Label htmlFor="body">Message</Label>
+              <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Your message here..." />
+            </div>
+
+            {/* Audience */}
+            <div className="space-y-2">
+              <Label>Audience</Label>
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="audience"
+                    value="All"
+                    checked={audienceType === 'all'}
+                    onChange={() => setAudienceType('all')}
+                  />
+                  <span>All Users</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="audience"
+                    value="Selected"
+                    checked={audienceType === 'selected'}
+                    onChange={() => setAudienceType('selected')}
+                  />
+                  <span>Selected Users</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Picker */}
+            {audienceType === 'selected' && (
+              <div className="space-y-3 rounded-lg border p-3">
+                <Label>Select Users</Label>
+                <Input
+                  placeholder="Search by username or email…"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                />
+                <div className="max-h-60 overflow-auto rounded-md border">
+                  {usersLoading ? (
+                    <div className="space-y-2 p-3">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="h-4 w-4 rounded bg-gray-200" />
+                          <div className="h-4 w-40 bg-gray-200" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : filteredUsers.length === 0 ? (
+                    <div className="p-3 text-sm text-muted-foreground">No users found.</div>
+                  ) : (
+                    <ul className="divide-y">
+                      {filteredUsers.map((u: User) => {
+                        const checked = selectedUserIds.includes(u._id);
+                        return (
+                          <li key={u._id} className="flex items-center justify-between p-2">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">{u.username || u.email}</p>
+                              <p className="truncate text-xs text-muted-foreground">{u.email}</p>
+                              {u.status === 'inactive' && (
+                                <p className="text-xs text-amber-600">Inactive</p>
+                              )}
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => toggleUser(u._id, e.target.checked)}
+                              aria-label={`Select ${u.username || u.email}`}
+                            />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground">Selected: {selectedUserIds.length}</div>
+              </div>
+            )}
+
+            <Button onClick={handleSend} disabled={loading}>
+              <Send className="mr-2 h-4 w-4" />
+              {loading ? 'Sending…' : audienceType === 'all' ? 'Send to All Users' : 'Send to Selected Users'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>History</CardTitle>
+            <CardDescription>Recently sent notifications.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DataTable
+              columns={columns}
+              data={notifications}
+              searchKey="title"
+              isLoading={loading}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 }

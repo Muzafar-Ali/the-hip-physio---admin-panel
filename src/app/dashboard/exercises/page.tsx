@@ -12,10 +12,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
-import { ColumnDef, DataTable } from '@/components/ui/common/DataTables';
-import { PageHeader } from '@/components/ui/common/PageHeader';
+import { ColumnDef, DataTable } from '@/components/common/DataTables';
+import { PageHeader } from '@/components/common/PageHeader';
 import { ExerciseModal } from '@/components/exercises/Exercises';
-import { ConfirmDialog } from '@/components/ui/common/ConfirmDialog';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 
 export default function ExercisesPage() {
   const {

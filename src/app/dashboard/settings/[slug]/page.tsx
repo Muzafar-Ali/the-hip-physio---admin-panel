@@ -15,7 +15,6 @@ export default function EditContentPage() {
 
   const { pages, loading, fetchPages, updatePage } = useContentStore();
   const [content, setContent] = useState('');
-  console.log('pages', pages);
   
   const page = pages.find(p => p.slug === slug);
   

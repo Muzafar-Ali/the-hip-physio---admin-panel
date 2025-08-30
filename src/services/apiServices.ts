@@ -45,27 +45,7 @@ export const apiService = {
     return newNotification;
   },
   getContentPages: async (): Promise<any> => {
-    try {
-      const response = await fetch(`${config.baseUri}/api/editable-content`, {
-        method: 'GET',
-        credentials: 'include', // ✅ Correct placement
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      return data.data;
 
-    } catch (error) {
-      console.error("Failed to fetch content pages:", error);
-      throw error;
-    }
   },
   updateContentPage: async(slug: string, contentHtml: string): Promise<ContentPage> => {
     try {

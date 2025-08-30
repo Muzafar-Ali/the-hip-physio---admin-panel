@@ -17,11 +17,14 @@ export interface User {
   _id: string;
   username: string;
   email: string;
-  status: 'Active' | 'Inactive';
+  status: 'active' | 'inactive';
   plan: string; // This would be populated from RehabPlan name
   startDate: string;
   lastLogin: string;
 }
+
+// use a narrow view for the picker (no new backend type needed)
+export type UserPickerItem = Pick<User, '_id' | 'username' | 'email' | 'status'>;
 
 export interface ExerciseCategory {
   _id: string;
@@ -58,20 +61,49 @@ export interface ExerciseState {
 }
 
 export interface RehabPlan {
-    _id: string;
-    name: string;
-    type: 'Paid' | 'Free';
-    durationWeeks: number;
+  _id: string;
+  name: string;
+  type: 'Paid' | 'Free';
+  durationWeeks: number;
 }
 
+// 1) Keep a single source of truth for allowed statuses
+export type NotificationStatus = 'Sent' | 'Scheduled';
+
+// 2) Shape returned/stored in state
 export interface Notification {
-    _id: string;
-    title: string;
-    body: string;
-    targetGroup: 'All' | 'Selected';
-    status: 'Sent' | 'Scheduled';
-    sentTime?: string;
+  _id: string;
+  title: string;
+  body: string;
+  audienceType: 'all' | 'Selected';
+  status: NotificationStatus;
+  sentAt?: string;
+  scheduleAt?: string;
 }
+
+// 3) Input when creating/sending a notification (no _id/status/sentAt)
+export interface SendNotificationInput {
+  title: string;
+  body: string;
+  audienceType: 'all' | 'selected';
+  userIds?: string[];      // required if Selected
+  scheduleAt?: string;
+}
+
+export interface NotificationState {
+  notifications: Notification[];
+  loading: boolean;
+  error: string | null;
+  fetchNotifications: () => Promise<void>;
+  sendNotification: (notification: SendNotificationInput) => Promise<void>;
+}
+
+// Optional: describe your API response to help TS
+type SendNotificationResponse = {
+  success: boolean;
+  message: string;
+  notificationId?: string;
+};
 
 export interface ContentPage {
   _id: string;
