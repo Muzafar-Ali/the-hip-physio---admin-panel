@@ -63,9 +63,23 @@ export interface ExerciseState {
 export interface RehabPlan {
   _id: string;
   name: string;
-  type: 'Paid' | 'Free';
-  durationWeeks: number;
+  description?: string;
+  planType: 'free' | 'paid';
+  price?: number;
+  phase?: string;
+  openEnded: boolean;
+
+  weekStart?: number | null;
+  weekEnd?: number | null;
+  planDurationInWeeks?: number;
+
+  totalWeeks?: number;
+  totalExercises?: number;
+  totalMinutes?: number;
+
+  categories?: Array<{ _id: string; title: string }>;
 }
+
 
 // 1) Keep a single source of truth for allowed statuses
 export type NotificationStatus = 'Sent' | 'Scheduled';
@@ -165,12 +179,12 @@ export interface ExerciseState {
   fetchExercises: () => Promise<void>;
 }
 
-export interface RehabPlanState {
-  plans: RehabPlan[];
-  loading: boolean;
-  error: string | null;
-  fetchPlans: () => Promise<void>;
-}
+// export interface RehabPlanState {
+//   plans: RehabPlan[];
+//   loading: boolean;
+//   error: string | null;
+//   fetchPlans: () => Promise<void>;
+// }
 
 export interface NotificationState {
   notifications: Notification[];
