@@ -4,13 +4,14 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Dumbbell, FileVideo, Send, Settings, Menu, X } from 'lucide-react';
+import { Home, Users, Dumbbell, FileVideo, Send, Settings, Menu, X, BookHeadphones } from 'lucide-react';
 import Image from 'next/image';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/dashboard/users', label: 'User Management', icon: Users },
   { href: '/dashboard/exercises', label: 'Exercises', icon: Dumbbell },
+  { href: '/dashboard/educational-videos', label: 'Educational Videos', icon: BookHeadphones },
   { href: '/dashboard/plans', label: 'Rehab Plans', icon: FileVideo },
   { href: '/dashboard/notifications', label: 'Notifications', icon: Send },
   { href: '/dashboard/settings', label: 'Content', icon: Settings },
