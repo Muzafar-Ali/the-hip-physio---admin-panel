@@ -72,7 +72,10 @@ export function ExerciseModal({
   });
 
   useEffect(() => {
-    if (isOpen) fetchCategories();
+    const getCategories = async () => {
+      await fetchCategories();
+    }
+    if (isOpen && categories.length === 0) getCategories();
   }, [isOpen, fetchCategories]);
 
   useEffect(() => {
@@ -129,7 +132,7 @@ export function ExerciseModal({
   
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-[625px] flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{initialData ? 'Edit Exercise' : 'Add New Exercise'}</DialogTitle>

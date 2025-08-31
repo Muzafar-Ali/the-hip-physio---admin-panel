@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useUserStore } from '@/stores/useUserStore';
-import { Notification, SendNotificationInput, User } from '@/lib/types';
+import { Notification, SendNotificationInput, User, UsersPickLIst } from '@/lib/types';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -24,7 +24,7 @@ export default function NotificationsPage() {
   const { notifications, loading, fetchNotifications, sendNotification } = useNotificationStore();
 
   // 👇 reuse your existing user store
-  const { users, loading: usersLoading, fetchUsers } = useUserStore();
+  const { usersPickList, loading: usersLoading, fetchUsersPickList } = useUserStore();
 
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -39,19 +39,19 @@ export default function NotificationsPage() {
 
   // Load users only when needed
   useEffect(() => {
-    if (audienceType === 'selected' && users.length === 0) {
-      fetchUsers();
+    if (audienceType === 'selected' && usersPickList?.length === 0) {
+      fetchUsersPickList();
     }
-  }, [audienceType, users.length, fetchUsers]);
+  }, [audienceType, usersPickList?.length, fetchUsersPickList]);
 
   const filteredUsers = useMemo(() => {
     const q = userSearch.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter((u: User) =>
-      u.username?.toLowerCase().includes(q) ||
+    if (!q) return usersPickList;
+    return usersPickList.filter((u: UsersPickLIst) =>
+      u.name?.toLowerCase().includes(q) ||
       u.email?.toLowerCase().includes(q)
     );
-  }, [users, userSearch]);
+  }, [usersPickList, userSearch]);
 
   const toggleUser = (id: string, checked: boolean) => {
     setSelectedUserIds(prev => checked ? [...new Set([...prev, id])] : prev.filter(x => x !== id));
@@ -83,7 +83,7 @@ export default function NotificationsPage() {
     setUserSearch('');
     setSelectedUserIds([]);
   };
-
+  
   return (
     <div className="space-y-6">
       <PageHeader title="Push Notifications" />
@@ -149,16 +149,16 @@ export default function NotificationsPage() {
                         </div>
                       ))}
                     </div>
-                  ) : filteredUsers.length === 0 ? (
+                  ) : filteredUsers?.length === 0 ? (
                     <div className="p-3 text-sm text-muted-foreground">No users found.</div>
                   ) : (
                     <ul className="divide-y">
-                      {filteredUsers.map((u: User) => {
+                      {filteredUsers?.map((u: UsersPickLIst) => {
                         const checked = selectedUserIds.includes(u._id);
                         return (
                           <li key={u._id} className="flex items-center justify-between p-2">
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-medium">{u.username || u.email}</p>
+                              <p className="truncate text-sm font-medium">{u.name || u.email}</p>
                               <p className="truncate text-xs text-muted-foreground">{u.email}</p>
                               {u.status === 'inactive' && (
                                 <p className="text-xs text-amber-600">Inactive</p>
@@ -168,7 +168,7 @@ export default function NotificationsPage() {
                               type="checkbox"
                               checked={checked}
                               onChange={(e) => toggleUser(u._id, e.target.checked)}
-                              aria-label={`Select ${u.username || u.email}`}
+                              aria-label={`Select ${u.name || u.email}`}
                             />
                           </li>
                         );

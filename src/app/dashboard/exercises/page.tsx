@@ -14,8 +14,42 @@ import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
 import { ColumnDef, DataTable } from '@/components/common/DataTables';
 import { PageHeader } from '@/components/common/PageHeader';
-import { ExerciseModal } from '@/components/exercises/Exercises';
+import { ExerciseModal } from '@/components/exercises/ExerciseModal';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+
+/** Controlled row actions: menu always closes before opening dialogs */
+function RowActions({
+  exercise,
+  onEdit,
+  onDelete,
+}: {
+  exercise: Exercise;
+  onEdit: (e: Exercise) => void;
+  onDelete: (e: Exercise) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0" aria-label="Actions">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {/* Use onSelect so Radix closes the menu reliably */}
+        <DropdownMenuItem onSelect={() => { setOpen(false); onEdit(exercise); }}>
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-red-500"
+          onSelect={() => { setOpen(false); onDelete(exercise); }}
+        >
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export default function ExercisesPage() {
   const {
@@ -66,12 +100,9 @@ export default function ExercisesPage() {
     const success = selectedExercise
       ? await updateExercise(formData)
       : await addExercise(formData);
-    if (success) {
-      handleCloseModal();
-    }
+    if (success) handleCloseModal();
   };
 
-  // IMPORTANT: In your ColumnDef, `cell` receives the row data (Exercise), not `{ row }`.
   const columns: ColumnDef<Exercise>[] = [
     {
       accessorKey: 'name',
@@ -92,46 +123,22 @@ export default function ExercisesPage() {
       accessorKey: 'difficulty',
       header: 'Difficulty',
       cell: (exercise) => (
-        <Badge
-          variant={exercise.difficulty === 'Advanced' ? 'destructive' : 'secondary'}
-        >
+        <Badge variant={exercise.difficulty === 'Advanced' ? 'destructive' : 'secondary'}>
           {exercise.difficulty}
         </Badge>
       ),
     },
-    {
-      accessorKey: 'reps',
-      header: 'Reps',
-      cell: (exercise) => exercise.reps,
-    },
-    {
-      accessorKey: 'sets',
-      header: 'Sets',
-      cell: (exercise) => exercise.sets,
-    },
-    // Your ColumnDef doesn't accept `id`, so for actions just bind to a real key (e.g. `_id`)
+    { accessorKey: 'reps', header: 'Reps', cell: (exercise) => exercise.reps },
+    { accessorKey: 'sets', header: 'Sets', cell: (exercise) => exercise.sets },
     {
       accessorKey: '_id',
       header: 'Actions',
       cell: (exercise) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleOpenModal(exercise)}>
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-red-500"
-              onClick={() => handleOpenConfirm(exercise)}
-            >
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <RowActions
+          exercise={exercise}
+          onEdit={handleOpenModal}
+          onDelete={handleOpenConfirm}
+        />
       ),
     },
   ];
@@ -151,6 +158,7 @@ export default function ExercisesPage() {
         isLoading={loading && exercises.length === 0}
       />
 
+      {/* Exercise Modal — only call onClose when Radix asks to CLOSE (see file change below) */}
       <ExerciseModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -159,6 +167,7 @@ export default function ExercisesPage() {
         isLoading={loading}
       />
 
+      {/* Confirm Dialog — same close guard (see file change below) */}
       <ConfirmDialog
         isOpen={isConfirmOpen}
         onClose={handleCloseConfirm}

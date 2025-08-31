@@ -75,7 +75,7 @@ export interface Notification {
   _id: string;
   title: string;
   body: string;
-  audienceType: 'all' | 'Selected';
+  audienceType: 'all' | 'selected';
   status: NotificationStatus;
   sentAt?: string;
   scheduleAt?: string;
@@ -117,9 +117,16 @@ export interface ContentPage {
 // Types for API responses and Zustand stores
 export interface UserWithAnalytics extends User {
   analytics: {
-      complianceRate: number;
-      averageIrritability: number;
+    complianceRate: number;
+    averageIrritability: number;
   }
+}
+
+export interface UsersPickLIst {
+  _id: string;
+  name: string;
+  email: string;
+  status: 'active' | 'inactive';
 }
 
 export interface DashboardAnalytics {
@@ -141,11 +148,13 @@ export interface DashboardAnalytics {
 // Zustand State & Actions
 export interface UserState {
   users: UserWithAnalytics[];
+  usersPickList: UsersPickLIst[]
   loading: boolean;
   error: string | null;
   fetchUsers: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  fetchUsersPickList: () => Promise<void>;
   // Add addUser, updateUser, etc. later
 }
 

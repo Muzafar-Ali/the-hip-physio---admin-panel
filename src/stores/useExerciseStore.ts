@@ -18,7 +18,9 @@ export const useExerciseStore = create<ExerciseState>((set, get) => ({
       const result = await response.json();
       
       if (!result.success || !response.ok) {
-        throw new Error(result.message || 'Failed to fetch exercises');
+        toast.error(result.message || 'Failed to fetch exercises');
+        set({ loading: false });
+        return;
       }
 
       set({ exercises: result.data, loading: false });
@@ -40,6 +42,7 @@ export const useExerciseStore = create<ExerciseState>((set, get) => ({
 
       if (!result.success || !response.ok) {
         toast.error(result.message || 'Failed to add exercise');
+        set({ loading: false });
         return false;
       }
       

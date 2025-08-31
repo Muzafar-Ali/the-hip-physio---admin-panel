@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 export const useUserStore = create<UserState>((set) => ({
   users: [],
+  usersPickList: [],
   loading: false,
   error: null,
   fetchUsers: async () => {
@@ -33,7 +34,6 @@ export const useUserStore = create<UserState>((set) => ({
         return false;
       }
 
-      toast.success("Login successful!");
       return true;
 
     } catch (err: any) {
@@ -63,5 +63,27 @@ export const useUserStore = create<UserState>((set) => ({
       console.error("Logout error:", err);
     }
   },
+  fetchUsersPickList: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await fetch(`${config.baseUri}/api/user/notification-picklist`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        set({ loading: false });
+        toast.error(result.message || 'Failed to fetch users');
+        return;
+      }
+
+      set({ usersPickList: result.users, loading: false });
+
+    } catch (err) {
+      set({ error: 'Failed to fetch users', loading: false });
+    }
+  }
 
 }));

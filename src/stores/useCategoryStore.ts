@@ -24,21 +24,21 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     set({ loading: true, error: null });
       try {
         const response = await fetch(`${API_BASE_URL}/api/exercise-categories`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
         });
         
-        if (!response.ok) {
-            throw new Error('Failed to fetch exercise categories');
-        }
+        // if (!response.ok) {
+        //   throw new Error('Failed to fetch exercise categories');
+        // }
 
         // The API returns the array directly, so we use the result itself
         const result = await response.json();
         
-        if(!result.data.success) {
-          toast.error(result.data.message);
-        }            
+        // if(!result.data.success) {
+        //   toast.error(result.data.message);
+        // }            
 
         set({ categories: result.data, loading: false });
 
