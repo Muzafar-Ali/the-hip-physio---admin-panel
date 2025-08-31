@@ -12,6 +12,7 @@ const navItems = [
   { href: '/dashboard/users', label: 'User Management', icon: Users },
   { href: '/dashboard/exercises', label: 'Exercises', icon: Dumbbell },
   { href: '/dashboard/educational-videos', label: 'Educational Videos', icon: BookHeadphones },
+  { href: '/dashboard/educational-categories', label: 'Educational Categories', icon: Settings },
   { href: '/dashboard/plans', label: 'Rehab Plans', icon: FileVideo },
   { href: '/dashboard/notifications', label: 'Notifications', icon: Send },
   { href: '/dashboard/settings', label: 'Content', icon: Settings },

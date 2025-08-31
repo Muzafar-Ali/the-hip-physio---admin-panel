@@ -80,6 +80,8 @@ export const useEducationalVideoStore = create<State>((set, get) => ({
 
   addVideo: async (formData: FormData) => {
     set({ loading: true, error: null });
+    console.log('formData', formData);
+    
     try {
       const res = await fetch(`${config.baseUri}/api/educational-videos`, {
         method: 'POST',
