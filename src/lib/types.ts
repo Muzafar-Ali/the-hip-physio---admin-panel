@@ -162,6 +162,7 @@ export interface DashboardAnalytics {
 // Zustand State & Actions
 export interface UserState {
   users: UserWithAnalytics[];
+  dummyUsers: UserWithAnalytics[],
   usersPickList: UsersPickLIst[]
   loading: boolean;
   error: string | null;
