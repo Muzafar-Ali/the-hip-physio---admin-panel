@@ -199,6 +199,11 @@ export const useRehabPlanStore = create<RehabPlanStore>((set, get) => ({
 
   createSessionAndAttach: async ({ planId, title, weekNumber, dayNumber, exerciseIds }) => {
 
+    if(exerciseIds.length === 0) {
+      toast.error('No exercise provided');
+      return false;
+    }
+
     set({ loading: true, error: null });
     try {
       // 1) Create the Session

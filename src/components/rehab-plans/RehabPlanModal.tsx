@@ -19,33 +19,22 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RehabPlan } from '@/lib/types';
 import { useRehabPlanCategoryStore } from '@/stores/rehabPlanCategories';
 
-/** helpers: accept text for numeric inputs ('' allowed), then coerce */
-const toOptionalNumber = z.preprocess(
-  (v) => (v === '' || v === null || v === undefined ? undefined : v),
-  z.coerce.number()
-);
+const optionalNumString = z.union([z.string(), z.number()]).optional();
 
-/** input value helper for controlled <input> */
-type InputValue = string | number | readonly string[] | undefined;
-const toInputValue = (v: unknown): InputValue => {
-  if (v === null || v === undefined) return '';
-  if (typeof v === 'number' || typeof v === 'string') return v;
-  return '';
-};
-
-/** FORM schema (title maps to API `name`; categories picked via local state) */
 const schema = z.object({
   name: z.string().min(3, 'Title must be at least 3 characters.'),
   description: z.string().optional(),
   planType: z.enum(['free', 'paid']),
   openEnded: z.boolean(),
-  price: toOptionalNumber.optional(),
+
+  // all optional on the form
+  price: optionalNumString,
   phase: z.string().optional(),
-  weekStart: toOptionalNumber.nullish(),
-  weekEnd: toOptionalNumber.nullish(),
-  planDurationInWeeks: toOptionalNumber.optional(),
+  weekStart: optionalNumString,
+  weekEnd: optionalNumString,
+  planDurationInWeeks: optionalNumString,
 });
-// important: form typed with INPUT shape
+
 type FormInput = z.input<typeof schema>;
 
 interface Props {
@@ -159,28 +148,22 @@ export function RehabPlanModal({
 
   /** submit => map to API payload (note: title -> name, selectedIds -> category) */
   const handleSubmitForm: SubmitHandler<FormInput> = (values) => {
+    const toNum = (v: unknown) => v === '' || v === null || v === undefined ? undefined : Number(v);
+
     const payload = {
       name: values.name,
       description: values.description || undefined,
       planType: values.planType,
       openEnded: !!values.openEnded,
-      price:
-        values.price === '' || values.price === undefined ? undefined : Number(values.price),
+      // force 0 when free:
+      price: values.planType === 'free' ? 0 : toNum(values.price),
       phase: values.phase || undefined,
-      weekStart:
-        values.weekStart === '' || values.weekStart === undefined
-          ? undefined
-          : Number(values.weekStart),
-      weekEnd:
-        values.weekEnd === '' || values.weekEnd === undefined
-          ? undefined
-          : Number(values.weekEnd),
-      planDurationInWeeks:
-        values.planDurationInWeeks === '' || values.planDurationInWeeks === undefined
-          ? undefined
-          : Number(values.planDurationInWeeks),
-      category: selectedIds, // <-- send array of IDs to API
+      weekStart: toNum(values.weekStart),
+      weekEnd: toNum(values.weekEnd),
+      planDurationInWeeks: toNum(values.planDurationInWeeks),
+      category: selectedIds,
     };
+
     onSubmit(payload);
   };
 
@@ -305,10 +288,10 @@ export function RehabPlanModal({
                       <Input
                         type="number"
                         step="0.01"
-                        value={toInputValue(field.value)}
+                        value={field.value ?? ''}
                         onChange={(e) => field.onChange(e.currentTarget.value)}
                         placeholder="e.g., 9.99"
-                        disabled={planType === 'free'}
+                        disabled={planType === 'free'} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -324,7 +307,7 @@ export function RehabPlanModal({
                     <FormControl>
                       <Input
                         type="number"
-                        value={toInputValue(field.value)}
+                        value={field.value ?? ''}
                         onChange={(e) => field.onChange(e.currentTarget.value)}
                         placeholder="e.g., 1"
                       />
@@ -342,7 +325,7 @@ export function RehabPlanModal({
                     <FormControl>
                       <Input
                         type="number"
-                        value={toInputValue(field.value)}
+                        value={field.value ?? ''}
                         onChange={(e) => field.onChange(e.currentTarget.value)}
                         placeholder="e.g., 8"
                       />
@@ -362,7 +345,7 @@ export function RehabPlanModal({
                   <FormControl>
                     <Input
                       type="number"
-                      value={toInputValue(field.value)}
+                      value={field.value ?? ''}
                       onChange={(e) => field.onChange(e.currentTarget.value)}
                       placeholder="e.g., 8"
                       disabled={form.watch('openEnded')}

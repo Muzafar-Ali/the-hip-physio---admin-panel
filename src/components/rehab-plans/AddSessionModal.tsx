@@ -21,7 +21,15 @@ const schema = z.object({
   weekNumber: z.coerce.number().int().min(1, 'Week must be at least 1'),
   dayNumber:  z.coerce.number().int().min(1, 'Day must be 1-7').max(7, 'Day must be 1-7'),
 });
+
 type FormInput = z.input<typeof schema>;
+
+type InputValue = string | number | readonly string[] | undefined;
+const toInputValue = (v: unknown): InputValue => {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'number' || typeof v === 'string') return v;
+  return ''; // fallback so TS never sees `{}` here
+};
 
 interface Props {
   isOpen: boolean;
@@ -121,7 +129,7 @@ export function AddSessionModal({
                       <Input
                         type="number"
                         min={1}
-                        value={field.value ?? ''}
+                        value={toInputValue(field.value)}
                         onChange={(e) => field.onChange(e.currentTarget.value)}
                       />
                     </FormControl>
@@ -129,6 +137,7 @@ export function AddSessionModal({
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="dayNumber"
@@ -140,7 +149,7 @@ export function AddSessionModal({
                         type="number"
                         min={1}
                         max={7}
-                        value={field.value ?? ''}
+                        value={toInputValue(field.value)}
                         onChange={(e) => field.onChange(e.currentTarget.value)}
                       />
                     </FormControl>
