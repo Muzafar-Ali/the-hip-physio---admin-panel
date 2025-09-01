@@ -3,12 +3,18 @@ import { toast } from 'sonner';
 import config from '@/config/config';
 import { RehabPlan } from '@/lib/types';
 
-// If you already have RehabPlan in '@/lib/types', keep that import and
-// delete this local type. It's here just to make this file drop-in ready.
+type AssignPayload = { 
+  planId: string; 
+  userId: string 
+};
 
-type AssignPayload = { planId: string; userId: string };
-
-type PickUser = { _id: string; name: string; email?: string };
+type CreateSessionArgs = {
+  planId: string;
+  title: string;
+  weekNumber: number;
+  dayNumber: number;
+  exerciseIds: string[];
+};
 
 type RehabPlanStore = {
   plans: RehabPlan[];
@@ -20,6 +26,7 @@ type RehabPlanStore = {
   updatePlan: (payload: { _id: string; name: string; type: 'Free' | 'Paid'; durationWeeks: number; description?: string }) => Promise<boolean>;
   deletePlan: (id: string) => Promise<void>;
   assignPlanToUser: (payload: AssignPayload) => Promise<boolean>;
+  createSessionAndAttach: (args: CreateSessionArgs) => Promise<boolean>;
 };
 
 export const useRehabPlanStore = create<RehabPlanStore>((set, get) => ({
@@ -35,7 +42,6 @@ export const useRehabPlanStore = create<RehabPlanStore>((set, get) => ({
         credentials: 'include',
       });
       const result = await res.json();
-      console.log('result', result);
       
       if (!res.ok || result?.success === false) {
         toast.error(result?.message || 'Failed to fetch rehab plans');
@@ -190,4 +196,76 @@ export const useRehabPlanStore = create<RehabPlanStore>((set, get) => ({
       return false;
     }
   },
+
+  createSessionAndAttach: async ({ planId, title, weekNumber, dayNumber, exerciseIds }) => {
+
+    set({ loading: true, error: null });
+    try {
+      // 1) Create the Session
+      const res1 = await fetch(`${config.baseUri}/api/session`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          rehabPlan: planId,
+          weekNumber,
+          dayNumber,
+          exercises: exerciseIds, // Array of Exercise ObjectIds
+        }),
+      });
+
+      const data1 = await res1.json().catch(() => ({} as any));
+      
+      if (!res1.ok || data1?.success === false) {
+        toast.error(data1?.message || 'Failed to create session');
+        set({ loading: false });
+        return false;
+      }
+      
+      const sessionId: string | undefined = data1?.data?._id ?? data1?.session?._id ?? data1?._id;
+      
+      if (!sessionId) {
+        toast.error('Server did not return session id');
+        set({ loading: false });
+        return false;
+      }
+
+      // 2) Attach to plan.schedule (upsert week/day + push sessionId)
+      const res2 = await fetch(`${config.baseUri}/api/rehab-plans/${planId}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schedule: [
+            {
+              week: weekNumber,
+              day: dayNumber,
+              sessions: [sessionId],
+            },
+          ],
+        }),
+      });
+
+      const data2 = await res2.json().catch(() => ({} as any));
+      
+      if (!res2.ok || data2?.success === false) {
+        toast.error(data2?.message || 'Failed to attach session to plan');
+        set({ loading: false });
+        return false;
+      }
+
+      toast.success(data2?.message || 'Session added to plan!');
+      
+      await get().fetchPlans(); // refresh list
+      
+      set({ loading: false });
+      return true;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to add session');
+      set({ error: err?.message || 'Failed to add session', loading: false });
+      return false;
+  }
+}
+
 }));

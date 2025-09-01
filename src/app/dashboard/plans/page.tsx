@@ -16,20 +16,25 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 
 import { RehabPlanModal } from '@/components/rehab-plans/RehabPlanModal';
 import { AssignPlanModal } from '@/components/rehab-plans/AssignPlanModal';
+import { AddSessionModal } from '@/components/rehab-plans/AddSessionModal';
+
 import { useRehabPlanStore } from '@/stores/useRehabPlanStore';
-import { RehabPlan } from '@/lib/types';
 import { useUserStore } from '@/stores/useUserStore';
+import { RehabPlan } from '@/lib/types';
 
 const isPlan = (x: any): x is RehabPlan => !!x && typeof x._id === 'string';
 
+/** Row actions — menu closes before opening any overlay */
 function RowActions({
   plan,
   onEdit,
+  onAddSession,
   onAssign,
   onDelete,
 }: {
   plan: RehabPlan;
   onEdit: (p: RehabPlan) => void;
+  onAddSession: (p: RehabPlan) => void;
   onAssign: (p: RehabPlan) => void;
   onDelete: (p: RehabPlan) => void;
 }) {
@@ -44,6 +49,9 @@ function RowActions({
       <DropdownMenuContent align="end">
         <DropdownMenuItem onSelect={() => { setOpen(false); onEdit(plan); }}>
           Edit Plan
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => { setOpen(false); onAddSession(plan); }}>
+          Add Session
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => { setOpen(false); onAssign(plan); }}>
           Assign to User
@@ -68,6 +76,7 @@ export default function RehabPlansPage() {
     updatePlan,
     deletePlan,
     assignPlanToUser,
+    createSessionAndAttach, // session-first flow
   } = useRehabPlanStore();
 
   const { usersPickList, fetchUsersPickList } = useUserStore();
@@ -75,16 +84,31 @@ export default function RehabPlansPage() {
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
+
   const [selectedPlan, setSelectedPlan] = useState<RehabPlan | null>(null);
 
   useEffect(() => {
     if (!plans || plans.length === 0) fetchPlans();
   }, [plans?.length, fetchPlans]);
 
+  // Create/Edit
   const openCreate = () => { setSelectedPlan(null); setIsPlanModalOpen(true); };
   const openEdit = (plan: RehabPlan) => { setSelectedPlan(plan); setIsPlanModalOpen(true); };
   const closePlanModal = () => { setIsPlanModalOpen(false); setSelectedPlan(null); };
 
+  // Add Session
+  const openAddSession = (plan: RehabPlan) => { setSelectedPlan(plan); setIsAddSessionOpen(true); };
+  const closeAddSession = () => { setIsAddSessionOpen(false); setSelectedPlan(null); };
+  const handleAddSessionSubmit = async (p: {
+    weekNumber: number; dayNumber: number; title: string; exerciseIds: string[];
+  }) => {
+    if (!selectedPlan) return;
+    const ok = await createSessionAndAttach({ planId: selectedPlan._id, ...p });
+    if (ok) closeAddSession();
+  };
+
+  // Assign
   const openAssign = async (plan: RehabPlan) => {
     setSelectedPlan(plan);
     if (!usersPickList?.length) await fetchUsersPickList();
@@ -92,10 +116,15 @@ export default function RehabPlansPage() {
   };
   const closeAssign = () => { setIsAssignOpen(false); setSelectedPlan(null); };
 
+  // Delete
   const openDelete = (plan: RehabPlan) => { setSelectedPlan(plan); setIsConfirmOpen(true); };
   const closeDelete = () => { setIsConfirmOpen(false); setSelectedPlan(null); };
-  const handleDeleteConfirm = async () => { if (selectedPlan) await deletePlan(selectedPlan._id); closeDelete(); };
+  const handleDeleteConfirm = async () => {
+    if (selectedPlan) await deletePlan(selectedPlan._id);
+    closeDelete();
+  };
 
+  // Submit plan (create/update)
   const handlePlanSubmit = async (payload: any) => {
     const ok = selectedPlan
       ? await updatePlan({ _id: selectedPlan._id, ...payload })
@@ -103,6 +132,7 @@ export default function RehabPlansPage() {
     if (ok) closePlanModal();
   };
 
+  // Submit assign
   const handleAssignSubmit = async (userId: string) => {
     if (!selectedPlan) return;
     const ok = await assignPlanToUser({ planId: selectedPlan._id, userId });
@@ -148,6 +178,7 @@ export default function RehabPlansPage() {
         <RowActions
           plan={row}
           onEdit={openEdit}
+          onAddSession={openAddSession}
           onAssign={openAssign}
           onDelete={openDelete}
         />
@@ -183,6 +214,14 @@ export default function RehabPlansPage() {
         onClose={closeAssign}
         users={usersPickList ?? []}
         onSubmit={handleAssignSubmit}
+        isLoading={loading}
+      />
+
+      <AddSessionModal
+        isOpen={isAddSessionOpen}
+        onClose={closeAddSession}
+        plan={selectedPlan}
+        onSubmit={handleAddSessionSubmit}
         isLoading={loading}
       />
 
