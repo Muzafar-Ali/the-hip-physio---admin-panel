@@ -1,10 +1,8 @@
 import { create } from 'zustand';
-import { UserState, UserWithAnalytics } from '@/lib/types';
-import { apiService } from '@/services/apiServices';
 import config from '@/config/config';
 import { toast } from 'sonner';
 
-// Local payload types (kept here so you don't have to edit other files)
+// ========= Types (real backend) =========
 type CreateUserPayload = {
   name: string;
   email: string;
@@ -26,63 +24,99 @@ type UpdateUserPayload = {
   dob?: string | null;
 };
 
-const normalizeUser = (u: any): UserWithAnalytics => ({
+export interface UsersPickLIst {
+  _id: string;
+  name: string;
+  email: string;
+  status: 'active' | 'inactive';
+}
+
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: 'user' | 'admin';
+  status: 'active' | 'inactive';
+  occupation?: string | null;
+  dob?: string | null;           // backend returns string
+  profile_photo?: string;
+  fcmToken?: string | null;
+  startDate: string;
+  lastLogin: string;
+  createdAt: string;
+  updatedAt: string;
+  notifications: string[];
+  purchasedPlans: string[];
+}
+
+// ========= Zustand State & Actions =========
+export interface UserState {
+  users: User[];
+  usersPickList: UsersPickLIst[];
+  loading: boolean;
+  error: string | null;
+
+  fetchUsers: () => Promise<void>;
+  addUser: (payload: CreateUserPayload) => Promise<User>;
+  updateUser: (payload: UpdateUserPayload) => Promise<User>;
+  deleteUser: (id: string) => Promise<void>;
+
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+
+  fetchUsersPickList: () => Promise<void>;
+}
+
+// ========= Helpers =========
+const normalizeUser = (u: any): User => ({
   ...u,
+  // keep UI stable if backend ever sends "username"
   name: u?.name ?? u?.username ?? '',
-  analytics: u?.analytics ?? u?.stats ?? {},
 });
 
-export const useUserStore = create<UserState>((set, get) => ({
+const clean = <T extends Record<string, any>>(obj: T): T => {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined && v !== null && v !== '') out[k] = v;
+  }
+  return out as T;
+};
+
+// ========= Store =========
+export const useUserStore = create<UserState>((set) => ({
   users: [],
-  dummyUsers: [],
   usersPickList: [],
   loading: false,
   error: null,
 
   // READ
-  fetchUsersDummy: async () => {
-    set({ loading: true, error: null });
-    try {
-      const data = await apiService.getUsers(); // keep your existing service
-      const list = Array.isArray(data) ? data : data?.data ?? [];
-      set({ dummyUsers: list.map(normalizeUser), loading: false });
-    } catch (err) {
-      set({ error: 'Failed to fetch users', loading: false });
-      toast.error('Failed to fetch users');
-    }
-  },
-
   fetchUsers: async () => {
     set({ loading: true, error: null });
     try {
-      const resposne = await fetch(`${config.baseUri}/api/user/all`, {
+      const response = await fetch(`${config.baseUri}/api/user/all`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-      })
+      });
 
-      const result = await resposne.json();
-      
-      if (!result.success) {
+      const result = await response.json().catch(() => ({} as any));
+      if (!result?.success) {
         set({ loading: false });
-        toast.error(result.message || 'Failed to fetch users');
+        toast.error(result?.message || 'Failed to fetch users');
         return;
       }
-      
-      console.log((result.data));
-      
-      const data = await result.data
 
-      const list = Array.isArray(data) ? data : data?.data ?? [];
-      set({ users: list.map(normalizeUser), loading: false });
-    } catch (err) {
+      const data = Array.isArray(result.data) ? result.data : [];
+      set({ users: data.map(normalizeUser), loading: false });
+    } catch {
       set({ error: 'Failed to fetch users', loading: false });
       toast.error('Failed to fetch users');
     }
   },
 
   // CREATE
-  addUser: async (payload: CreateUserPayload) => {
+  addUser: async (payload) => {
     try {
       const res = await fetch(`${config.baseUri}/api/user/add`, {
         method: 'POST',
@@ -104,7 +138,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         throw new Error(result?.message || result?.error || 'Failed to create user');
       }
 
-      const created: UserWithAnalytics = normalizeUser(result?.data ?? result?.user);
+      const created: User = normalizeUser(result?.data ?? result?.user);
       set((s) => ({ users: [created, ...s.users] }));
       toast.success('User created');
       return created;
@@ -115,14 +149,9 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   // UPDATE (partial)
-  updateUser: async ({ _id, ...rest }: UpdateUserPayload) => {
+  updateUser: async ({ _id, ...rest }) => {
     try {
-      // send only defined, non-empty fields
-      const body: Record<string, any> = {};
-      Object.entries(rest).forEach(([k, v]) => {
-        if (v !== undefined && v !== '') body[k] = v;
-      });
-
+      const body = clean(rest);
       const res = await fetch(`${config.baseUri}/api/user/update/${_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -135,10 +164,8 @@ export const useUserStore = create<UserState>((set, get) => ({
         throw new Error(result?.message || result?.error || 'Failed to update user');
       }
 
-      const updated: UserWithAnalytics = normalizeUser(result?.data ?? result?.user);
-      set((s) => ({
-        users: s.users.map((u) => (u._id === _id ? updated : u)),
-      }));
+      const updated: User = normalizeUser(result?.data ?? result?.user);
+      set((s) => ({ users: s.users.map((u) => (u._id === _id ? updated : u)) }));
       toast.success('User updated');
       return updated;
     } catch (err: any) {
@@ -148,7 +175,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   // DELETE
-  deleteUser: async (id: string) => {
+  deleteUser: async (id) => {
     try {
       const res = await fetch(`${config.baseUri}/api/user/update/${id}`, {
         method: 'DELETE',
@@ -174,19 +201,18 @@ export const useUserStore = create<UserState>((set, get) => ({
       const res = await fetch(`${config.baseUri}/api/user/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
         credentials: 'include',
+        body: JSON.stringify({ email, password }),
       });
 
-      const result = await res.json();
-
-      if (!result.success) {
-        toast.error(result.message || 'Login failed.');
+      const result = await res.json().catch(() => ({} as any));
+      if (!result?.success) {
+        toast.error(result?.message || 'Login failed.');
         return false;
       }
       return true;
-    } catch (err: any) {
-      console.error('Login error:', err);
+    } catch {
+      toast.error('Login failed.');
       return false;
     }
   },
@@ -198,16 +224,15 @@ export const useUserStore = create<UserState>((set, get) => ({
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
-      const result = await res.json();
+      const result = await res.json().catch(() => ({} as any));
 
-      if (!result.success) {
-        toast.error(result.message || 'Logout failed.');
+      if (!result?.success) {
+        toast.error(result?.message || 'Logout failed.');
         return;
       }
       toast.success('Logout successful!');
-    } catch (err: any) {
+    } catch {
       toast.error('Logout failed. Please try again.');
-      console.error('Logout error:', err);
     }
   },
 
@@ -221,15 +246,15 @@ export const useUserStore = create<UserState>((set, get) => ({
         credentials: 'include',
       });
 
-      const result = await response.json();
-      if (!result.success) {
+      const result = await response.json().catch(() => ({} as any));
+      if (!result?.success) {
         set({ loading: false });
-        toast.error(result.message || 'Failed to fetch users');
+        toast.error(result?.message || 'Failed to fetch users');
         return;
       }
 
-      set({ usersPickList: result.users, loading: false });
-    } catch (err) {
+      set({ usersPickList: (result.users ?? result.data ?? []) as UsersPickLIst[], loading: false });
+    } catch {
       set({ error: 'Failed to fetch users', loading: false });
     }
   },

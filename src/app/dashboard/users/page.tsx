@@ -15,19 +15,19 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 
 import {
-  AdminUser,
   useUserStore,
+  type User,
 } from '@/stores/useUserStore';
-import { UserModal } from '@/components/user/UserModal';
+import { UserModal } from '@/components/user/UserModal'; // change to '@/components/users/UserModal' if that's your path
 
 function RowActions({
   user,
   onEdit,
   onDelete,
 }: {
-  user: AdminUser;
-  onEdit: (u: AdminUser) => void;
-  onDelete: (u: AdminUser) => void;
+  user: User;
+  onEdit: (u: User) => void;
+  onDelete: (u: User) => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -66,11 +66,13 @@ export default function UsersPage() {
     loading,
     fetchUsers,
     deleteUser,
+    addUser,
+    updateUser,
   } = useUserStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -83,7 +85,7 @@ export default function UsersPage() {
     setIsModalOpen(true);
   };
 
-  const handleOpenModal = (user: AdminUser | null) => {
+  const handleOpenModal = (user: User | null) => {
     setSelectedUser(user);
     setIsModalOpen(true);
   };
@@ -93,7 +95,7 @@ export default function UsersPage() {
     setSelectedUser(null);
   };
 
-  const handleOpenConfirm = (user: AdminUser) => {
+  const handleOpenConfirm = (user: User) => {
     setSelectedUser(user);
     setIsConfirmOpen(true);
   };
@@ -111,7 +113,24 @@ export default function UsersPage() {
     handleCloseConfirm();
   };
 
-  const columns: ColumnDef<AdminUser>[] = [
+  // Create/Update from modal
+  const handleFormSubmit = async (values: Partial<User>) => {
+    setSaving(true);
+    try {
+      if (selectedUser) {
+        await updateUser({ _id: selectedUser._id, ...values });
+      } else {
+        // on create, backend expects password; your UserModal should enforce it
+        await addUser(values as any);
+      }
+      await fetchUsers();
+      handleCloseModal();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const columns: ColumnDef<User>[] = [
     {
       accessorKey: 'name',
       header: 'Name',
@@ -136,17 +155,6 @@ export default function UsersPage() {
         </Badge>
       ),
     },
-    // {
-    //   accessorKey: 'analytics',
-    //   header: 'Compliance',
-    //   cell: (row) => (
-    //     <div className="text-center">
-    //       {row?.analytics?.complianceRate != null
-    //         ? `${row.analytics.complianceRate}%`
-    //         : '—'}
-    //     </div>
-    //   ),
-    // },
     {
       accessorKey: 'actions',
       header: 'Actions',
@@ -180,7 +188,7 @@ export default function UsersPage() {
         onClose={handleCloseModal}
         initialData={selectedUser}
         isLoading={saving}
-        setIsLoading={setSaving}
+        onSubmit={handleFormSubmit}
       />
 
       <ConfirmDialog

@@ -22,9 +22,17 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { useUserStore, AdminUser } from '@/stores/useUserStore';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 
+import type { User } from '@/stores/useUserStore';
+
+// Zod schema (occupation/dob are strings in backend)
 const baseSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters.'),
   email: z.string().email('Enter a valid email.'),
@@ -32,6 +40,7 @@ const baseSchema = z.object({
   status: z.enum(['active', 'inactive']),
   occupation: z.string().optional().nullable(),
   dob: z.string().optional().nullable(),
+  // allow empty string or >= 6 chars; we'll require password on create below
   password: z.union([z.string().length(0), z.string().min(6, 'Min 6 characters')]).optional(),
 });
 
@@ -40,9 +49,9 @@ type FormInput = z.input<typeof baseSchema>;
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  initialData?: AdminUser | null;
+  initialData?: User | null;
   isLoading: boolean;
-  setIsLoading: (v: boolean) => void;
+  onSubmit: (values: Partial<User>) => Promise<void>; // <-- NEW
 }
 
 export function UserModal({
@@ -50,10 +59,9 @@ export function UserModal({
   onClose,
   initialData,
   isLoading,
-  setIsLoading,
+  onSubmit,
 }: Props) {
   const isEdit = !!initialData;
-  const { addUser, updateUser, fetchUsers } = useUserStore();
 
   const resolver = useMemo(() => zodResolver(baseSchema), []);
   const form = useForm<FormInput>({
@@ -78,7 +86,7 @@ export function UserModal({
         status: initialData.status ?? 'active',
         occupation: initialData.occupation ?? '',
         dob: initialData.dob ?? '',
-        password: '',
+        password: '', // never prefill
       });
     } else {
       form.reset({
@@ -100,30 +108,21 @@ export function UserModal({
       return;
     }
 
-    const payload: any = {
+    const payload: Partial<User> = {
       name: values.name.trim(),
       email: values.email.trim().toLowerCase(),
       role: values.role,
       status: values.status,
       occupation: values.occupation?.trim() || null,
       dob: values.dob?.trim() || null,
+      ...(values.password && values.password.trim().length > 0
+        ? { password: values.password.trim() }
+        : {}),
     };
-    if (values.password && values.password.trim().length > 0) {
-      payload.password = values.password.trim();
-    }
 
-    setIsLoading(true);
-    try {
-      if (isEdit && initialData) {
-        await updateUser({ _id: initialData._id, ...payload });
-      } else {
-        await addUser(payload);
-      }
-      await fetchUsers();
-      onClose();
-    } finally {
-      setIsLoading(false);
-    }
+    await onSubmit(payload);
+    // parent usually closes after onSubmit, but closing here is also fine:
+    onClose();
   };
 
   return (
@@ -134,11 +133,7 @@ export function UserModal({
         </DialogHeader>
 
         <Form {...form}>
-          <form
-            id="user-form"
-            onSubmit={form.handleSubmit(handleFormSubmit)}
-            className="space-y-4"
-          >
+          <form id="user-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -212,7 +207,15 @@ export function UserModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Occupation</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl>
+                      <Input
+                        value={field.value ?? ''}   // fix null → ''
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -224,7 +227,16 @@ export function UserModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Date of Birth (string)</FormLabel>
-                    <FormControl><Input placeholder="YYYY-MM-DD or any string" {...field} /></FormControl>
+                    <FormControl>
+                      <Input
+                        placeholder="YYYY-MM-DD or any string"
+                        value={field.value ?? ''}   // fix null → ''
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -236,7 +248,9 @@ export function UserModal({
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password {isEdit ? <span className="text-muted-foreground">(leave blank to keep)</span> : null}</FormLabel>
+                  <FormLabel>
+                    Password {isEdit ? <span className="text-muted-foreground">(leave blank to keep)</span> : null}
+                  </FormLabel>
                   <FormControl><Input type="password" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
