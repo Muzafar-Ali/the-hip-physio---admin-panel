@@ -64,6 +64,7 @@ export default function EducationalVideosPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<EducationalVideo | null>(null);
+  const [modalKey, setModalKey] = useState(0);
 
   useEffect(() => {
     fetchVideos();
@@ -72,6 +73,7 @@ export default function EducationalVideosPage() {
 
   const handleOpenModal = (video: EducationalVideo | null = null) => {
     setSelectedVideo(video);
+    setModalKey(k => k + 1); 
     setIsModalOpen(true);
   };
 
@@ -99,7 +101,10 @@ export default function EducationalVideosPage() {
     const success = selectedVideo
       ? await updateVideo(formData)
       : await addVideo(formData);
-    if (success) handleCloseModal();
+    if (success) {
+      handleCloseModal();
+      await fetchVideos();
+    }
   };
 
   const columns: ColumnDef<EducationalVideo>[] = [
@@ -172,6 +177,7 @@ export default function EducationalVideosPage() {
       />
 
       <EducationalVideoModal
+        key={selectedVideo?._id ?? `new-${modalKey}`}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSubmit={handleFormSubmit}

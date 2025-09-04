@@ -64,13 +64,20 @@ export default function ExercisesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [modalKey, setModalKey] = useState(0);
 
   useEffect(() => {
     fetchExercises();
   }, [fetchExercises]);
 
+  // const handleOpenModal = (exercise: Exercise | null = null) => {
+  //   setSelectedExercise(exercise);
+  //   setIsModalOpen(true);
+  // };
+
   const handleOpenModal = (exercise: Exercise | null = null) => {
     setSelectedExercise(exercise);
+    setModalKey(k => k + 1); 
     setIsModalOpen(true);
   };
 
@@ -100,7 +107,10 @@ export default function ExercisesPage() {
     const success = selectedExercise
       ? await updateExercise(formData)
       : await addExercise(formData);
-    if (success) handleCloseModal();
+    if (success) {
+      handleCloseModal();
+      await fetchExercises();
+    }
   };
 
   const columns: ColumnDef<Exercise>[] = [
@@ -160,6 +170,7 @@ export default function ExercisesPage() {
 
       {/* Exercise Modal — only call onClose when Radix asks to CLOSE (see file change below) */}
       <ExerciseModal
+        key={selectedExercise?._id ?? `new-${modalKey}`}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSubmit={handleFormSubmit}
