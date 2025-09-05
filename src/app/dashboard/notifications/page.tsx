@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useUserStore } from '@/stores/useUserStore';
-import { Notification, SendNotificationInput, User, UsersPickLIst } from '@/lib/types';
+import { Notification, SendNotificationInput, UsersPickLIst } from '@/lib/types';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -34,8 +34,8 @@ export default function NotificationsPage() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   useEffect(() => {
-    if (notifications.length === 0) fetchNotifications();
-  }, [notifications.length, fetchNotifications]);
+    if (notifications?.length === 0) fetchNotifications();
+  }, [notifications?.length, fetchNotifications]);
 
   // Load users only when needed
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function NotificationsPage() {
                 <div className="max-h-60 overflow-auto rounded-md border">
                   {usersLoading ? (
                     <div className="space-y-2 p-3">
-                      {Array.from({ length: 6 }).map((_, i) => (
+                      {Array.from({ length: 6 })?.map((_, i) => (
                         <div key={i} className="flex items-center gap-3">
                           <div className="h-4 w-4 rounded bg-gray-200" />
                           <div className="h-4 w-40 bg-gray-200" />

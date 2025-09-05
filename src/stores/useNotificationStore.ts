@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { NotificationState, Notification } from '@/lib/types';
-import { apiService } from '@/services/apiServices';
 import config from '@/config/config';
 import { toast } from 'sonner';
 
@@ -27,7 +26,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         return;
       }
 
-      set({ notifications: result.data, loading: false });
+      set({ notifications: result.notifications, loading: false });
 
     } catch (err) {
       set({ error: 'Failed to fetch notifications', loading: false });
