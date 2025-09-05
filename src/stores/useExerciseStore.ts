@@ -48,7 +48,7 @@ export const useExerciseStore = create<ExerciseState>((set, get) => ({
       
       toast.success( result.message || 'Exercise added successfully!');
       // Add the new exercise to the start of the list
-      set(state => ({ exercises: [result.data, ...state.exercises], loading: false }));
+      set({ loading: false });
       return true;
     } catch (err: any) {
       toast.error(err.message);

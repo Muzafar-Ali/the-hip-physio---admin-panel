@@ -96,7 +96,7 @@ export const useEducationalVideoStore = create<State>((set, get) => ({
       }
 
       toast.success(result?.message || 'Video added successfully!');
-      set((state) => ({ videos: [result.data, ...state.videos], loading: false }));
+      set({ loading: false });
       return true;
     } catch (err: any) {
       toast.error(err.message);
