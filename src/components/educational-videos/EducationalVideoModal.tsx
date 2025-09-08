@@ -163,7 +163,7 @@ export function EducationalVideoModal({
                   const { value, onChange, ...rest } = field;
                   return (
                     <FormItem>
-                      <FormLabel>Duration (seconds)</FormLabel>
+                      <FormLabel>Duration (mintes)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"

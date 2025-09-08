@@ -133,7 +133,7 @@ export default function EducationalVideosPage() {
       accessorKey: 'duration',
       header: 'Duration',
       cell: (v) => {
-        const minutes = v.duration ? Math.round(v.duration / 60) : 0;
+        const minutes = Math.floor(v.duration);
         return <span>{minutes} min</span>;
       },
     },
