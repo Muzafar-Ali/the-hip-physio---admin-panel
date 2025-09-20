@@ -187,13 +187,13 @@ export interface ExerciseState {
 //   fetchPlans: () => Promise<void>;
 // }
 
-export interface NotificationState {
-  notifications: Notification[];
-  loading: boolean;
-  error: string | null;
-  fetchNotifications: () => Promise<void>;
-  sendNotification: (notification: Omit<Notification, '_id' | 'status' | 'sentTime'>) => Promise<void>;
-}
+// export interface NotificationState {
+//   notifications: Notification[];
+//   loading: boolean;
+//   error: string | null;
+//   fetchNotifications: () => Promise<void>;
+//   sendNotification: (notification: Omit<Notification, '_id' | 'status' | 'sentTime'>) => Promise<void>;
+// }
 
 export interface ContentState {
   pages: ContentPage[];

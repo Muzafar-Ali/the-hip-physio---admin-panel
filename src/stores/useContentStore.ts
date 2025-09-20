@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { ContentState } from '@/lib/types';
-import { apiService } from '@/services/apiServices';
 import { toast } from 'sonner';
 import config from '@/config/config';
 
