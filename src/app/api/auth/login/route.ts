@@ -1,24 +1,26 @@
-// app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
+  // Read once
   const body = await req.json();
 
-  const result = await fetch("https://the-hip-physio-api.onrender.com/api/user/admin/login", {
+  // Pass forward
+  const r = await fetch("https://the-hip-physio-api.onrender.com/api/user/admin/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
-  if (!result.ok) {
-    return new NextResponse(await result.text(), { status: result.status });
+  if (!r.ok) {
+    const errorText = await r.text();   // text() once only
+    return new NextResponse(errorText, { status: r.status });
   }
 
-  // Suppose backend responds { token: "..." }
-  console.log('result', await result.json())
-  const { token } = await result.json();
-
-  // Set cookie for your frontend domain (vercel.app)
+  // parse once
+  const data = await r.json();
+  const token = data.token;
+  console.log('Data', data);
+  
   const res = NextResponse.json({ success: true });
   res.cookies.set("aToken", token, {
     httpOnly: true,
