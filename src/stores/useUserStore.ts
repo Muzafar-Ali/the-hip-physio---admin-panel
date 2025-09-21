@@ -195,49 +195,27 @@ export const useUserStore = create<UserState>((set) => ({
     }
   },
 
-  // // AUTH
-  // login: async (email, password) => {
-  //   try {
-  //     const res = await fetch(`${config.baseUri}/api/user/admin/login`, {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       credentials: 'include',
-  //       body: JSON.stringify({ email, password }),
-  //     });
-
-  //     const result = await res.json().catch(() => ({} as any));
-  //     if (!result?.success) {
-  //       toast.error(result?.message || 'Login failed.');
-  //       return false;
-  //     }
-  //     return true;
-  //   } catch {
-  //     toast.error('Login failed.');
-  //     return false;
-  //   }
-  // },
-
   // AUTH
-login: async (email, password) => {
-  try {
-    const res = await fetch(`/api/auth/login`, {            // << no baseUri
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',                                // keep
-      body: JSON.stringify({ email, password }),
-    });
+  login: async (email, password) => {
+    try {
+      const res = await fetch(`${config.baseUri}/api/user/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      });
 
-    const result = await res.json().catch(() => ({} as any));
-    if (!result?.success) {
-      toast.error(result?.message || 'Login failed.');
+      const result = await res.json().catch(() => ({} as any));
+      if (!result?.success) {
+        toast.error(result?.message || 'Login failed.');
+        return false;
+      }
+      return true;
+    } catch {
+      toast.error('Login failed.');
       return false;
     }
-    return true;
-  } catch {
-    toast.error('Login failed.');
-    return false;
-  }
-},
+  },
 
   logout: async () => {
     try {
