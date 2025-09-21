@@ -198,7 +198,7 @@ export const useUserStore = create<UserState>((set) => ({
   // AUTH
   login: async (email, password) => {
     try {
-      const res = await fetch(`${config.baseUri}/api/user/admin/login`, {
+      const res = await fetch(`/api/user/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
